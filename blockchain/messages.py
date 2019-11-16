@@ -11,6 +11,7 @@ class Message:
         super().__init__()
         self.type = typ
         self.key = ""
+        self.signature = ""
         self.job_hash = ""
         self.metadata = ""
         self.data = ""
@@ -19,6 +20,7 @@ class Message:
     def to_json(self):
         json = '{"type":' + self.type
         json += ',"key":' + self.key
+        json += ',"signature":' + self.signature
         json += ',"job_hash":' + self.job_hash
         json += ',"metadata":' + self.metadata
         json += ',"data":' + self.data
@@ -30,6 +32,7 @@ class Message:
         json = dict(json.split(":") for item in json.split(","))
         self.type = json["type"]
         self.key = json["key"]
+        self.signature = json["signature"]
         self.job_hash = json["job_hash"]
         self.metadata = json["metadata"]
         self.data = json["data"]

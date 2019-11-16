@@ -11,6 +11,35 @@
         integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
     <title>LearningChain</title>
+
+    <script>
+
+        let MAXIME_FAG = "http://192.33.207.178:5000"
+
+        function fetchData() {
+            $.get(MAXIME_FAG + "/machine_stats", function (data) {
+                js = JSON.parse(data)
+                if (cpuMemUsage.data.datasets[0].data.length < 30) {
+                    cpuMemUsage.data.datasets[0].data.push(js.cpu_percentage)
+                    cpuMemUsage.data.datasets[1].data.push(js.memory_percentage)
+                    cpuMemUsage.data.labels.push("")
+                } else {
+                    for (let i = 0; i < cpuMemUsage.data.datasets[0].data.length - 1; i++) {
+                        cpuMemUsage.data.datasets[0].data[i] = cpuMemUsage.data.datasets[0].data[i + 1]
+                        cpuMemUsage.data.datasets[1].data[i] = cpuMemUsage.data.datasets[1].data[i + 1]
+                    }
+                    cpuMemUsage.data.datasets[0].data[cpuMemUsage.data.datasets[0].data.length - 1] = js.cpu_percentage
+                    cpuMemUsage.data.datasets[1].data[cpuMemUsage.data.datasets[1].data.length - 1] = js.memory_percentage
+                }
+                cpuMemUsage.update()
+            });
+
+        }
+
+        setInterval(fetchData, 500)
+
+    </script>
+
 </head>
 
 <body style="height: 100%;">
@@ -62,12 +91,12 @@
                         <h1>Dashboard</h1>
                     </div>
                     <div class="col-4">
-                        <h2>Account balance: 87c</h2>
+                        <h2>Account balance: 876c</h2>
                     </div>
                 </div>
-                <h2>Current Job: </h2>
-                <canvas id="myChart" width="400" height="200"></canvas>
-                <canvas id="myChart2" width="400" height="200"></canvas>
+                <h2>Machine Stats</h2>
+                <canvas id="myChart" width="100" height="25"></canvas>
+                <canvas id="myChart2" width="100" height="25"></canvas>
             </div>
         </div>
     </div>
@@ -84,45 +113,56 @@
     <script>
         var ctx = document.getElementById('myChart').getContext('2d');
         var ctx2 = document.getElementById('myChart2').getContext('2d');
-        var exObj = {
-            type: 'bar',
+        var cpuMemUsage = new Chart(ctx, {
+            type: 'line',
             data: {
-                labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+                labels: [],
                 datasets: [{
-                    label: '# of Votes',
-                    data: [12, 19, 3, 5, 2, 3],
-                    backgroundColor: [
-                        'rgba(255, 99, 132, 0.2)',
-                        'rgba(54, 162, 235, 0.2)',
-                        'rgba(255, 206, 86, 0.2)',
-                        'rgba(75, 192, 192, 0.2)',
-                        'rgba(153, 102, 255, 0.2)',
-                        'rgba(255, 159, 64, 0.2)'
+                    label: 'CPU Usage',
+                    borderColor: 'rgb(255, 99, 132)',
+                    data: [
+
                     ],
-                    borderColor: [
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 206, 86, 1)',
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(153, 102, 255, 1)',
-                        'rgba(255, 159, 64, 1)'
+                    fill: false,
+                }, {
+                    label: 'Memory Usage',
+                    borderColor: 'rgb(54, 162, 235)',
+                    data: [
+
                     ],
-                    borderWidth: 1
+                    fill: false,
                 }]
             },
             options: {
+                responsive: true,
+                tooltips: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                hover: {
+                    mode: 'nearest',
+                    intersect: true
+                },
                 scales: {
+                    xAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: ''
+                        }
+                    }],
                     yAxes: [{
-                        ticks: {
-                            beginAtZero: true
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Percent'
                         }
                     }]
                 }
             }
-        };
-        var myChart = new Chart(ctx, exObj)
-
-        var myChart = new Chart(ctx2, exObj)
+        });
+        var myChart = new Chart(ctx, cpuMemUsage)
+//        var myChart = new Chart(ctx2, exObj)
 
     </script>
 

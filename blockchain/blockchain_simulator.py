@@ -16,6 +16,8 @@ class BlockchainSimulator:
     def __init__(self):
         super().__init__()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.currentBalance = 10
+        self.simulatorBalance = 100
         if not os.path.exists('simulatorpublickey.pem'):
             self.key = ECC.generate(curve='P-256')
             f = open('simulatorpublickey.pem', 'wt')
@@ -30,6 +32,17 @@ class BlockchainSimulator:
             self.key = ECC.import_key(f.read())
             f.close()
         return
+
+    def getBalanceOfUser(self):
+        return self.currentBalance
+    
+    def payBountyToUser(self, bounty):
+        self.currentBalance + bounty
+        self.simulatorBalance - bounty
+
+    def userPaysBounty(self, bounty):
+        self.currentBalance - bounty
+        self.simulatorBalance + bounty
     
 if __name__ == "__main__":
     simulator = BlockchainSimulator()

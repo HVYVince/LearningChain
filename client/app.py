@@ -77,3 +77,8 @@ def get_running_jobs():
         map(lambda x: x['job'], blockchain_client.running_containers.values()))
 
     return json.dumps(jobs)
+
+@app.route("/max_jobs/<value>")
+def set_max_jobs(value):
+    messaging_queue.put({"type": Message.MAX_JOBS, "data": value})
+    return "OK"

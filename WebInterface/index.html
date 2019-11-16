@@ -41,18 +41,24 @@
                         <input type="number" class="form-control" id="maxtime" value="3600">
                     </div>
                 </div>
-                <div class="row">
+                <div class="form-group row">
+                    <div class="col-sm-6">
+                        <button type="button" class="form-control btn btn-danger">Kill current job</button>
+                    </div>
+                </div>
+                <div class=" row">
                     <h3>Create a job</h3>
                 </div>
                 <div class="form-group row">
                     <div class="col-sm-6">
-                        <button type="button" class="form-control btn btn-info">New Job</button>
+                        <button type="button" class="form-control btn btn-info" data-toggle="modal"
+                            data-target="#newJobModal">New Job</button>
                     </div>
                 </div>
             </div>
             <div class="col-9" style="margin-left: 25%">
                 <div class="row">
-                    <div class="col-7">
+                    <div class="col-8">
                         <h1>Dashboard</h1>
                     </div>
                     <div class="col-4">
@@ -119,6 +125,42 @@
         var myChart = new Chart(ctx2, exObj)
 
     </script>
+
+    <div class="modal" tabindex="-1" role="dialog" id="newJobModal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Job Creation</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="form-group">
+                            <label for="diurl">Docker Image url</label>
+                            <input type="url" class="form-control" id="diurl" aria-describedby="diurl"
+                                placeholder="Example: Docker Hub url, ...">
+                        </div>
+                        <div class="form-group">
+                            <label for="validuntil">Valid Until</label>
+                            <input type="date" class="form-control" id="validuntil" aria-describedby="validuntil">
+                        </div>
+                        <div class="form-group">
+                            <label for="bounty">Bounty value</label>
+                            <input type="number" class="form-control" id="bounty" aria-describedby="bounty">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="console.log(2)">Send
+                        Job
+                        Request</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

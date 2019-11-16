@@ -10,6 +10,7 @@ if not os.path.exists('myprivatekey.pem'):
     key = ECC.generate(curve='P-256')
     f = open('mypublickey.pem', 'wt')
     f.write(key.public_key().export_key(format='PEM'))
+    f.close()
     f = open('myprivatekey.pem', 'wt')
     f.write(key.export_key(format='PEM'))
     f.close()

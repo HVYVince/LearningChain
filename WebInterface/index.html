@@ -14,10 +14,10 @@
 
     <script>
 
-        let MAXIME_FAG = "http://192.33.207.178:5000"
+        let BASE_URL = "http://192.33.207.178:5000"
 
         function fetchData() {
-            $.get(MAXIME_FAG + "/machine_stats", function (data) {
+            $.get(BASE_URL + "/machine_stats", function (data) {
                 js = JSON.parse(data)
                 if (cpuMemUsage.data.datasets[0].data.length < 30) {
                     cpuMemUsage.data.datasets[0].data.push(js.cpu_percentage)
@@ -34,9 +34,31 @@
                 cpuMemUsage.update()
             });
 
+            $.get(BASE_URL + "/balance", function (data) {
+                js = JSON.parse(data)
+                $("#balance").text("Account balance: " + js.balance + "c");
+            });
         }
 
-        setInterval(fetchData, 500)
+        function setMinimalBounty() {
+            $.post(BASE_URL + "/minimal_bounty/" + $("#minbounty").val())
+        }
+
+        function setMinimalValidity() {
+            $.post(BASE_URL + "/minimal_validity/" + $("#mintime").val())
+        }
+
+        function setMaxExec() {
+            $.post(BASE_URL + "/max_exec/" + $("#maxtime").val())
+        }
+
+        function submitJob() {
+            let dt = $("#validuntil").val()
+            let ts = new Date(dt.split("-").join("-")).getTime() / 1000;
+            $.post(BASE_URL + "/job", { url: $("#diurl").val(), valid: ts, bounty: $("#bounty").val() })
+        }
+
+        setInterval(fetchData, 1000)
 
     </script>
 
@@ -52,13 +74,15 @@
                 <div class="form-group row">
                     <label for="minbounty" class="col-sm-6 col-form-label">Minimal Bounty</label>
                     <div class="col-sm-6">
-                        <input type="number" class="form-control" id="minbounty" value="10">
+                        <input type="number" class="form-control" id="minbounty" value="10"
+                            onchange="setMinimalBounty()">
                     </div>
                 </div>
                 <div class="form-group row">
                     <label for="mintime" class="col-sm-6 col-form-label">Minimal Time (Seconds)</label>
                     <div class="col-sm-6">
-                        <input type="number" class="form-control" id="mintime" value="86400">
+                        <input type="number" class="form-control" id="mintime" value="86400"
+                            onchange="setMinimalValidity()">
                     </div>
                 </div>
                 <div class="row">
@@ -67,14 +91,14 @@
                 <div class="form-group row">
                     <label for="maxtime" class="col-sm-6 col-form-label">Maximal Training Time (Seconds)</label>
                     <div class="col-sm-6">
-                        <input type="number" class="form-control" id="maxtime" value="3600">
+                        <input type="number" class="form-control" id="maxtime" value="3600" onchange="setMaxExec()">
                     </div>
                 </div>
-                <div class="form-group row">
+                <!--<div class="form-group row">
                     <div class="col-sm-6">
                         <button type="button" class="form-control btn btn-danger">Kill current job</button>
                     </div>
-                </div>
+                </div>-->
                 <div class=" row">
                     <h3>Create a job</h3>
                 </div>
@@ -91,12 +115,11 @@
                         <h1>Dashboard</h1>
                     </div>
                     <div class="col-4">
-                        <h2>Account balance: 876c</h2>
+                        <h2 id="balance">Account balance: 876c</h2>
                     </div>
                 </div>
                 <h2>Machine Stats</h2>
-                <canvas id="myChart" width="100" height="25"></canvas>
-                <canvas id="myChart2" width="100" height="25"></canvas>
+                <canvas id="myChart" width="100%" height="30"></canvas>
             </div>
         </div>
     </div>
@@ -112,7 +135,6 @@
 
     <script>
         var ctx = document.getElementById('myChart').getContext('2d');
-        var ctx2 = document.getElementById('myChart2').getContext('2d');
         var cpuMemUsage = new Chart(ctx, {
             type: 'line',
             data: {
@@ -139,10 +161,8 @@
                     mode: 'index',
                     intersect: false,
                 },
-                hover: {
-                    mode: 'nearest',
-                    intersect: true
-                },
+                tooltips: { enabled: false },
+                //animation: false,
                 scales: {
                     xAxes: [{
                         display: true,
@@ -162,7 +182,6 @@
             }
         });
         var myChart = new Chart(ctx, cpuMemUsage)
-//        var myChart = new Chart(ctx2, exObj)
 
     </script>
 
@@ -179,8 +198,8 @@
                     <form>
                         <div class="form-group">
                             <label for="diurl">Docker Image url</label>
-                            <input type="url" class="form-control" id="diurl" aria-describedby="diurl"
-                                placeholder="Example: Docker Hub url, ...">
+                            <input type="text" class="form-control" id="diurl" aria-describedby="diurl"
+                                placeholder="Example: matoran/lauzhack_knn_5@sha256:6520a3942ac2e2c91ab747a22c5d748b7f2e3acbd4414aa5867d752c5d60fb10">
                         </div>
                         <div class="form-group">
                             <label for="validuntil">Valid Until</label>
@@ -193,7 +212,7 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="console.log(2)">Send
+                    <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="submitJob()">Send
                         Job
                         Request</button>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>

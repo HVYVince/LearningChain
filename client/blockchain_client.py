@@ -14,7 +14,7 @@ class BlockchainClient(Thread):
         self.started_images = []
         self.max_exec = 3600
         self.minimal_bounty = 0
-        self.minimal_validity = 10  # TODOO to set
+        self.minimal_validity = 10
         self.account_balance = 0
 
     def run(self):
@@ -44,7 +44,7 @@ class BlockchainClient(Thread):
             if status == 'exited':
                 output = docker_client.retrieve_output(id)
                 print(f"Output was {output}")
-                # TODO here we should then output to blockchain (retrieve model from correct tmp folder)
+                # TODO here we should then output to blockchain (retrieve model from correct tmp folder) (actually we should just sent it later)
                 self.kill_container(id)
 
     def find_new_jobs(self):

@@ -99,6 +99,15 @@ def bounty_validation(message):
         }
         sign_and_broadcast(response)
 
+def balance():
+    """verify the loss w with training set, if correct credit worker, else choose next winner until found"""
+    w = message['w']
+    # TODO verification
+    if key.public_key() not in user_credits:
+        return 0
+    return {"balance": user_credits[key.public_key()]}
+
+
 
 def job_payload(message):
     """verify the loss w with training set, if correct credit worker, else choose next winner until found"""
@@ -128,6 +137,12 @@ def receive_message(raw_json):
     else:
         return False
 
+def handle_command_message(raw_json):
+    message = json.loads(raw_json)
+    if msg['type'] == "BALANCE":
+        return json.dumps(balance())
+    else:
+        return False
 
 def broadcast(message):
     print("emulate sending message: ", message)

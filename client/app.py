@@ -16,6 +16,13 @@ app = initialize_app()
 blockchain_client = BlockchainClient()
 blockchain_client.run()
 
+settings = {
+    "minimal_bounty" : 0,
+    "minimal_validity_time" : 0,
+    "maximal_time" : 0,
+    "maximal_cpu" : 0
+}
+
 
 @app.route("/")
 def hello():
@@ -35,20 +42,20 @@ def machine_stats():
 
 @app.route("/minimal_bounty", methods=["POST"])
 def set_minimal_bounty():
-    # TODO
-    return "NOT IMPLEMENTED"
+    settings["minimal_bounty"] = app.request.form.get('bounty')
+    return "ok"
 
 
 @app.route("/minimal_time", methods=["POST"])
 def set_minimal_time():
-    # TODO
-    return "NOT IMPLEMENTED"
+    settings["minimal_validity_time"] = app.request.form.get('minimal_time')
+    return "ok"
 
 
 @app.route("/max_exec", methods=["POST"])
 def set_max_exec():
-    # TODO
-    return "NOT IMPLEMENTED"
+    settings["minimal_bounty"] = app.request.form.get('ma')
+    return "ok"
 
 
 @app.route("/balance")

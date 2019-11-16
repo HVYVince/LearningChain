@@ -71,7 +71,9 @@ def force_quit(id):
     return "OK"
 
 
-@app.route
-def get_running_pods():
-    ids = blockchain_client.running_containers.keys()
-    return ids
+@app.route("/jobs")
+def get_running_jobs():
+    jobs = list(
+        map(lambda x: x['job'], blockchain_client.running_containers.values()))
+
+    return json.dumps(jobs)

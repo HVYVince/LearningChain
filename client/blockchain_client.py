@@ -32,7 +32,7 @@ class BlockchainClient(Thread):
             time.sleep(1)
 
     def handle_expired_containers(self):
-        to_delete = list(filter(lambda x: self.running_containers[x]['expiration'] < time.time(
+        to_delete = list(filter(lambda key: self.running_containers[key]['expiration'] < time.time(
         ), self.running_containers.keys()))
         for id in to_delete:
             self.kill_container(id)
@@ -49,18 +49,22 @@ class BlockchainClient(Thread):
 
     def find_new_jobs(self):
         # TODO return new jobs from blockchain with filters from parameters
-        return [{"image": "matoran/lauzhack_knn_5@sha256:b61e1bcb6353650e44575390812bc237be1c17ec06e974745b1bf380aa4dd94e"}]
+        return [{"image": "matoran/lauzhack_knn_5@sha256:6520a3942ac2e2c91ab747a22c5d748b7f2e3acbd4414aa5867d752c5d60fb10"}, {"image": "matoran/lauzhack_knn_5@sha256:6520a3942ac2e2c91ab747a22c5d748b7f2e3acbd4414aa5867d752c5d60fb10"}, {"image": "matoran/lauzhack_knn_5@sha256:6520a3942ac2e2c91ab747a22c5d748b7f2e3acbd4414aa5867d752c5d60fb10"}, {"image": "matoran/lauzhack_knn_5@sha256:6520a3942ac2e2c91ab747a22c5d748b7f2e3acbd4414aa5867d752c5d60fb10"}, {"image": "matoran/lauzhack_knn_5@sha256:6520a3942ac2e2c91ab747a22c5d748b7f2e3acbd4414aa5867d752c5d60fb10"}]
 
     def start_new_jobs(self, jobs):
         for job in jobs:
             image_id = job["image"]
+            # TODO remove the comment for the if
             if image_id not in self.started_images:  # TODO perhaps should we check full with the hash as well
                 print(
                     f"Launching new container for image {image_id} for maximum {self.max_exec} seconds")
                 self.started_images.append(image_id)
                 container = docker_client.run_container(image_id)
+                # TODO job_data should be directly from job in blockchain
+                job_data = {"image": image_id,
+                            "valid": "1573936233", "bounty": "696969", "container_id": container.id}
                 self.running_containers[container.id] = {
-                    "container": container, "expiration": time.time() + self.max_exec}
+                    "container": container, "expiration": int(time.time() + self.max_exec), "job": job_data}
 
     def retrieve_account_balance(self):
         # TODO retrieve account balance when blockchain happens
@@ -76,6 +80,7 @@ class BlockchainClient(Thread):
             self.process_message(msg)
 
     def process_message(self, msg):
+        print(f"MESSAGE: {msg}")
         if msg["type"] == Message.MAXIMAL_EXEC:
             self.max_exec = msg["data"]
         elif msg["type"] == Message.FORCE_QUIT:

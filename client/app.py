@@ -4,24 +4,26 @@ import psutil
 import requests
 import json
 from blockchain_client import BlockchainClient
+import time
+from queue import Queue
+import Message
+
+from flask_cors import CORS
 
 
 def initialize_app():
     app = Flask(__name__)
+    CORS(app)  # This will enable CORS for all routes
     return app
 
 
 app = initialize_app()
 
-blockchain_client = BlockchainClient()
-blockchain_client.run()
 
+messaging_queue = Queue(maxsize=0)
 
-@app.route("/")
-def hello():
-    container = docker_client.run_container(
-        "matoran/lauzhack_knn_5", "b61e1bcb6353650e44575390812bc237be1c17ec06e974745b1bf380aa4dd94e")
-    return container.id
+blockchain_client = BlockchainClient(messaging_queue)
+blockchain_client.start()
 
 
 @app.route("/machine_stats")
@@ -33,37 +35,42 @@ def machine_stats():
     return json.dumps(stats)
 
 
-@app.route("/minimal_bounty", methods=["POST"])
-def set_minimal_bounty():
-    # TODO
-    return "NOT IMPLEMENTED"
+@app.route("/minimal_bounty/:value", methods=["POST"])
+def set_minimal_bounty(value):
+    messaging_queue.put({"type": Message.MINIMAL_BOUNTY, "data": value})
+    return "OK"
 
 
-@app.route("/minimal_time", methods=["POST"])
-def set_minimal_time():
-    # TODO
-    return "NOT IMPLEMENTED"
+@app.route("/minimal_validity/:value", methods=["POST"])
+def set_minimal_validity_time(value):
+    messaging_queue.put({"type": Message.SET_MINIMAL_VALIDITY, "data": value})
+    return "OK"
 
 
-@app.route("/max_exec", methods=["POST"])
-def set_max_exec():
-    # TODO
-    return "NOT IMPLEMENTED"
+@app.route("/max_exec/:value", methods=["POST"])
+def set_max_exec(value):
+    messaging_queue.put({"type": Message.MAXIMAL_EXEC, "data": value})
+    return "OK"
 
 
 @app.route("/balance")
 def balance():
-    # TODO query hyperledger REST
-    return "NOT IMPLEMENTED"
+    return json.dumps({"balance": blockchain_client.account_balance})
 
 
 @app.route("/job", methods=["POST"])
 def queue_job():
     # TODO
-    return "NOT IMPLEMENTED"
+    return "OK"
 
 
 @app.route("/force_quit/:id", methods=["POST"])
 def force_quit(id):
-    # TODO
-    return "NOT IMPLEMENTED"
+    messaging_queue.put({"type": Message.FORCE_QUIT, "data": id})
+    return "OK"
+
+
+@app.route
+def get_running_pods():
+    ids = blockchain_client.running_containers.keys()
+    return ids

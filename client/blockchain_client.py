@@ -63,7 +63,7 @@ class BlockchainClient(Thread):
         to_delete = list(filter(lambda key: self.running_containers[key]['expiration'] < time.time(
         ), self.running_containers.keys()))
         for signature in to_delete:
-            print("EXPIRED", signature)
+            print("EXPIRED", signature, self.running_containers[signature]['expiration'])
             self.kill_container(signature)
 
     def handle_finished_containers(self):
@@ -157,7 +157,7 @@ class BlockchainClient(Thread):
             signature = msg["data"]
             self.kill_container(signature)
         elif msg["type"] == Message.MINIMAL_BOUNTY:
-            self.max_exec = int(msg["data"])
+            self.minimal_bounty = int(msg["data"])
         elif msg["type"] == Message.SET_MINIMAL_VALIDITY:
             self.minimal_validity = int(time.time()) + int(msg['data'])
         elif msg["type"] == Message.JOB_QUEUE:

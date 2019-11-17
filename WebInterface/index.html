@@ -83,7 +83,6 @@
         }
 
         setInterval(fetchData, 1000)
-
     </script>
 
 </head>
@@ -109,7 +108,7 @@
                 <div class="form-group row">
                     <label for="minbounty" class="col-sm-6 col-form-label">Min. Bounty</label>
                     <div class="col-sm-6">
-                        <input type="number" class="form-control" id="minbounty" value="10" min="0"
+                        <input type="number" class="form-control" id="minbounty" value="4" min="0"
                             onchange="setMinimalBounty()">
                     </div>
                 </div>
@@ -258,6 +257,8 @@
                 setTimeout(fadeOut, 5)
             }
         }
+
+        setMinimalBounty()
     </script>
 
     <div class="modal" tabindex="-1" role="dialog" id="newJobModal">

@@ -15,7 +15,6 @@ class BlockchainClient(Thread):
     def __init__(self, messaging_queue):
         super().__init__()
         self.messaging_queue = messaging_queue
-        # TODO here key is id and then we have object with full container and expiration time and image_id
         self.running_containers = {}
         self.started_images = []
         self.max_exec = 3600
@@ -25,7 +24,7 @@ class BlockchainClient(Thread):
         self.max_jobs = 4
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         socket_backend = '192.168.43.131'
-        self.socket.connect((socket_backend, 5607))
+        self.socket.connect((socket_backend, 5609))
         self.stats = {}
 
     def run(self):
@@ -34,6 +33,7 @@ class BlockchainClient(Thread):
             self.process_queue()
             self.retrieve_account_balance()
             self.retrieve_stats()
+            self.check_validations()
             self.handle_expired_containers()
             self.handle_finished_containers()
             jobs = self.find_new_jobs()
@@ -42,6 +42,18 @@ class BlockchainClient(Thread):
                 self.start_new_jobs(jobs)
 
             time.sleep(1)
+
+    def check_validations(self):
+        self.send_message(json.dumps({"type": "CHECK"}))
+        validations_bytes = self.receive_message_bytes()
+        validations = json.loads(validations_bytes.decode())
+        print("VALIDATIONS", validations)
+        for validation in validations:
+            self.validate(validation)
+
+    def validate(self, validation):
+        output = docker_client.run_validation(validation)
+        self.send_message(json.dumps({"type": "VALIDATE", "loss": output}))
 
     def retrieve_stats(self):
         self.send_message(json.dumps({"type": "STATS"}))

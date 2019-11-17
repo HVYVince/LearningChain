@@ -11,7 +11,7 @@ from messages import MessageType
 class DaemonController:
     def __init__(self, blockchain_controller: 'BlockchainController'):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.bind(('', 5609))
+        sock.bind(('', 5601))
         sock.listen(10)
         self.sock = sock
         self.inputs = [sock]
@@ -35,7 +35,6 @@ class DaemonController:
         self.send_message(json.dumps(jobs), s)
 
     def send_message(self, message, destination: socket):
-        print(message)
         print("DaemonController send")
         message = message.encode()
 
@@ -72,6 +71,7 @@ class DaemonController:
             elif message['type'] == 'CHECK':
                 self.get_jobs_to_check(s)
             elif message['type'] == 'VALIDATE':
+                print(message)
                 self.validate(message)
             else:
                 print("WTF gros")
@@ -84,7 +84,7 @@ class DaemonController:
         self.blockchain.share_job_done(message)
 
     def update(self):
-        readable, writable, exceptional = select.select(self.inputs, self.outputs, self.inputs,1)
+        readable, writable, exceptional = select.select(self.inputs, self.outputs, self.inputs, 1)
         for s in readable:
             if s is self.sock:
                 connection, client_address = s.accept()

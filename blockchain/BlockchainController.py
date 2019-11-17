@@ -18,9 +18,16 @@ class BlockchainController:
         self.pool_jobs = []
         # contains jobs done
         self.jobs_done = []
-        #
+        # job_id => job
         self.jobs = {}
+        # user_id => credit
         self.user_credits = {}
+        # results to be verified
+        self.to_check = []
+        # job_id => JOB_DONE
+        self.results = {}
+
+
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.bind(('', 5599))
         sock.listen(50)
@@ -28,10 +35,9 @@ class BlockchainController:
         self.inputs = [sock]
         self.outputs = []
         self.message_queues = {}
+
         self.key = None
-        self.to_check = []
         self.public_key = None
-        self.results = {}
 
         if not os.path.exists('myprivatekey.pem'):
             print("creating new ECC private key")
@@ -51,12 +57,14 @@ class BlockchainController:
         print("BlockchainController init end")
 
     def sign(self, message):
+        """create signature for a message"""
         h = SHA256.new(message)
         signer = DSS.new(self.key, 'fips-186-3')
         signature = signer.sign(h)
         return signature
 
     def verify_message(self, message):
+        """verify message integrity"""
         signature = message['signature']
         del message['signature']
         h = SHA256.new(message.encode())
@@ -68,6 +76,7 @@ class BlockchainController:
             return False
 
     def new_job(self, job):
+        """blockchain method which add new job to pool"""
         validity = job["type"] == MessageType.NEW_JOB and job not in self.pool_jobs
         if validity:
             self.pool_jobs.append(job)
@@ -78,6 +87,13 @@ class BlockchainController:
         message['signature'] = binascii.hexlify(self.sign(data)).decode()
         if message['type'] == MessageType.NEW_JOB:
             self.pool_jobs.append(message)
+            self.jobs[message['signature']] = message
+        elif message['type'] == MessageType.JOB_DONE:
+            self.job_response(message)
+        elif message['type'] == 'WINNER':
+            self.bounty_validation(message)
+        elif message['type'] == MessageType.JOB_PAYLOAD:
+            self.to_check.append(message)
         self.broadcast(json.dumps(message).encode())
 
     def job_result(self, job_id, loss):
@@ -90,26 +106,35 @@ class BlockchainController:
         self.sign_and_broadcast(message)
 
     def job_response(self, response):
-        # it's our job ?
-        if response['key'] == self.public_key:
+        """peers send us job response"""
+        job_owner = self.jobs[response['job_id']]['key']
+        if job_owner == self.public_key:
             print("it's our job, nice very nice")
+            message = {
+                'type': 'WINNER',
+                'job_id': response['job_id'],
+                'winner': response['key'],
+            }
+            self.sign_and_broadcast(message)
         self.jobs_done.append(response)
 
     def bounty_validation(self, message):
-        if 'winner' not in message or 'job_id' not in message or 'valid_until' not in self.jobs[message['job_id']] \
-                or self.jobs[message['job_id']]['valid_until'] > time.time():
-            print("bounty validation invalid", message)
-            return False
+        """peers send us bounty validation"""
+        #if 'winner' not in message or 'job_id' not in message or 'valid_until' not in self.jobs[message['job_id']]: # \
+                # or self.jobs[message['job_id']]['valid_until'] > time.time(): # comment for the demo
+         #   print("bounty validation invalid")
+          #  return False
         if message['winner'] == self.public_key:
             response = {
                 'job_id': message['job_id'],
                 'w': self.results[message['job_id']]['w'],
+                'image': self.jobs[message['job_id']]['data']['data'],
                 'type': MessageType.JOB_PAYLOAD
             }
             self.sign_and_broadcast(response)
 
     def job_payload(self, message):
-        """we receive a job payload we need to check it before adding it to the blockchain"""
+        """peers send us payload"""
         job = self.jobs[message['job_id']]
         message['image'] = job['data']['data']
         self.to_check.append(message)
@@ -138,8 +163,7 @@ class BlockchainController:
 
     def broadcast(self, message):
         """send data to peers, useless to implemented. Distributed algorithms already exists"""
-        pass
-        # print("emulate sending message: ", message)
+        # self.handle_message(message)
 
     def share_job_done(self, message):
         self.results[message['job_id']] = message

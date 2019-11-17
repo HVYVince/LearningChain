@@ -6,6 +6,7 @@ import time
 import os.path
 import binascii
 
+from blockchain.messages import MessageType
 from Cryptodome.Hash import SHA256
 from Cryptodome.Signature import DSS
 from Cryptodome.PublicKey import ECC
@@ -39,7 +40,8 @@ class BlockchainController:
             f = open('myprivatekey.pem', 'rt')
             self.key = ECC.import_key(f.read())
             f.close()
-
+        
+        self.user_credits[self.key] = 100
         print("BlockchainController init end")
 
     def sign(self, message):
@@ -60,21 +62,16 @@ class BlockchainController:
             return False
 
     def new_job(self, job):
-        if job not in self.pool_jobs:
+        validity = job["type"] == MessageType.NEW_JOB and job not in self.pool_jobs
+        if(validity):
             self.pool_jobs.append(job)
-
-        # TODO should try this job ? From which data ?
-        self.do_job()
-
-    def do_job(self):
-        pass
 
     def sign_and_broadcast(self, message):
         message['key'] = self.key.public_key().export_key(format='PEM')
         data = json.dumps(message).encode()
         message['signature'] = binascii.hexlify(self.sign(data)).decode()
         print(message)
-        if message['type'] == 'NEW_JOB':
+        if message['type'] == MessageType.NEW_JOB:
             self.pool_jobs.append(message)
         self.broadcast(json.dumps(message).encode())
 
@@ -83,7 +80,7 @@ class BlockchainController:
         message = {
             'job_id': job_id,
             'loss_w': loss,
-            'type': 'JOB_DONE'
+            'type': MessageType.JOB_DONE
         }
         self.sign_and_broadcast(message)
 
@@ -102,7 +99,7 @@ class BlockchainController:
             response = {
                 'job_id': message['job_id'],
                 'w': "results",
-                'type': 'JOB_PAYLOAD'
+                'type': MessageType.JOB_PAYLOAD
             }
             self.sign_and_broadcast(response)
 
@@ -124,13 +121,13 @@ class BlockchainController:
             self.close(s)
             return False
         type_m = message['type']
-        if type_m == 'NEW_JOB':
+        if type_m == MessageType.NEW_JOB:
             self.new_job(message)
-        elif type_m == 'JOB_DONE':
+        elif type_m == MessageType.JOB_DONE:
             self.job_response(message)
-        elif type_m == 'BOUNTY_VALIDATION':
+        elif type_m == MessageType.BOUNTY_VALIDATION:
             self.bounty_validation(message)
-        elif type_m == 'JOB_PAYLOAD':
+        elif type_m == MessageType.JOB_PAYLOAD:
             self.job_payload(message)
         else:
             return False
@@ -180,6 +177,9 @@ class BlockchainController:
             del self.message_queues[s]
 
     def publish_job(self, job):
+        if(self.user_credits[self.key] < job.bounty):
+            return
+        self.user_credits[self.key] -= job.bounty
         self.sign_and_broadcast(job)
 
     def share_job_done(self, message):

@@ -5,6 +5,7 @@ import json
 import struct
 
 from BlockchainController import BlockchainController
+from blockchain.messages import MessageType
 
 
 class DaemonController:
@@ -44,11 +45,11 @@ class DaemonController:
             message = json.loads(raw_json)
             if message['type'] == 'BALANCE':
                 self.send_message(json.dumps(self.balance()), s)
-            elif message['type'] == 'NEW_JOB':
+            elif message['type'] == MessageType.NEW_JOB:
                 self.new_job(message)
             elif message['type'] == 'GET_JOBS':
                 self.get_jobs(s)
-            elif message['type'] == 'JOB_DONE':
+            elif message['type'] == MessageType.JOB_DONE:
                 self.job_done(message)
 
     def update(self):

@@ -4,11 +4,12 @@ from Cryptodome.Signature import DSS
 from Cryptodome.PublicKey import ECC
 import json
 
-class MessageType(Enum):
-    NEW_JOB = 1
-    JOB_DONE = 2
-    BOUNTY_VALIDATION = 3
-    JOB_PAYLOAD = 4
+
+class MessageType:
+    NEW_JOB = 'NEW_JOB'
+    JOB_DONE = 'JOB_DONE'
+    BOUNTY_VALIDATION = 'BOUNTY_VALIDATION'
+    JOB_PAYLOAD = 'JOB_PAYLOAD'
 
 class Message:
     def __init__(self, typ):

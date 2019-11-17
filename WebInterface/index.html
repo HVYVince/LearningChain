@@ -13,7 +13,7 @@
 
     <script>
 
-        let BASE_URL = "http://192.33.207.178:5000"
+        let BASE_URL = "http://192.168.43.251:5000"
 
         function fetchData() {
             $.get(BASE_URL + "/machine_stats", function (data) {
@@ -41,15 +41,23 @@
             $.get(BASE_URL + "/jobs", function (data) {
                 js = JSON.parse(data)
                 $("#cardsrow").html("");
+                let i = 1;
                 js.forEach(e => {
                     let s = '<div class="card" style="width: 18rem; margin-right: 10px; margin-bottom: 10px;">'
                     s += '<div class="card-body">'
-                    s += '<h5 class="card-title">' + e.image + '</h5>'
-                    s += '<p class="card-text">Valid until: ' + e.valid + '<br/> Bounty: ' + e.bounty + '</p>'
-                    s += '<a href="#" class="btn btn-danger">Kill Job</a>'
+                    s += '<h5 class="card-title">Job ' + i + '</h5>'
+                    s += '<p class="card-text">Bounty: ' + e.data.metadata.bounty + '</p>'
+                    s += '<a href="#" class="btn btn-danger" onclick="kill(' + e.signature + ')">Kill Job</a>'
                     s += '</div></div>'
                     $("#cardsrow").html($("#cardsrow").html() + s);
+                    i++;
                 });
+            });
+
+            $.get(BASE_URL + "/stats", function (data) {
+                js = JSON.parse(data)
+                successChart.data.datasets[0].data[0] = (js.success / js.jobs) * 100
+                successChart.data.datasets[0].data[1] = 100 - ((js.success / js.jobs) * 100)
             });
         }
 
@@ -75,6 +83,10 @@
             $.post(BASE_URL + "/max_jobs/" + $("#maxjobs").val())
         }
 
+        function kill(pid) {
+            $.post(BASE_URL + "/force_quit/" + pid)
+        }
+
         setInterval(fetchData, 1000)
 
     </script>
@@ -82,37 +94,48 @@
 </head>
 
 <body style="height: 100%;">
-    <div class="container-fluid h-100">
+    <div id="overlay">
+        <img src="overlay.png" style="width: 100%">
+        <button type="button" class="form-control btn btn-danger" onclick="removeOverlay()" style="position:absolute;
+            width: 20%;
+            height: 10%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);">
+            <h3>Go to dashboard</h3>
+        </button>
+    </div>
+    <div id="general" style="display:none;" class="container-fluid h-100">
         <div class="row h-100">
             <div class="col-3 shadow bg-white pl-4 rounded h-100" style="width: 100%; position: fixed">
                 <div class="row">
                     <h3>Inbound job filter</h3>
                 </div>
                 <div class="form-group row">
-                    <label for="minbounty" class="col-sm-6 col-form-label">Minimal Bounty</label>
+                    <label for="minbounty" class="col-sm-6 col-form-label">Min. Bounty</label>
                     <div class="col-sm-6">
-                        <input type="number" class="form-control" id="minbounty" value="10" onchange="setMinimalBounty()">
+                        <input type="number" class="form-control" id="minbounty" value="10" min="0" onchange="setMinimalBounty()">
                     </div>
                 </div>
                 <div class="form-group row">
-                    <label for="mintime" class="col-sm-6 col-form-label">Minimal Time (Seconds)</label>
+                    <label for="mintime" class="col-sm-6 col-form-label">Min. Time</label>
                     <div class="col-sm-6">
-                        <input type="number" class="form-control" id="mintime" value="86400" onchange="setMinimalValidity()">
+                        <input type="number" class="form-control" id="mintime" value="86400" min="0" onchange="setMinimalValidity()">
                     </div>
                 </div>
                 <div class="row">
                     <h3>Computation Parameters</h3>
                 </div>
                 <div class="form-group row">
-                    <label for="maxtime" class="col-sm-6 col-form-label">Maximal Training Time (Seconds)</label>
+                    <label for="maxtime" class="col-sm-6 col-form-label">Max. Training Time</label>
                     <div class="col-sm-6">
-                        <input type="number" class="form-control" id="maxtime" value="3600" onchange="setMaxExec()">
+                        <input type="number" class="form-control" id="maxtime" value="3600" min="0" onchange="setMaxExec()">
                     </div>
                 </div>
                 <div class="form-group row">
-                    <label for="maxjobs" class="col-sm-6 col-form-label">Maximal Concurrent Jobs</label>
+                    <label for="maxjobs" class="col-sm-6 col-form-label">Max. Concurrent Jobs</label>
                     <div class="col-sm-6">
-                        <input type="number" class="form-control" id="maxjobs" value="4" onchange="setMaxJobs()">
+                        <input type="number" class="form-control" id="maxjobs" value="4" min="0" onchange="setMaxJobs()">
                     </div>
                 </div>
                 <!--<div class="form-group row">
@@ -139,14 +162,6 @@
                     </div>
                 </div>
                 <hr />
-                <h2> Finished Jobs </h2>
-                <div class="row">
-                    <div class="col-12">
-                        <div class="row" id="fcardsrow" style="margin-left: 20px;">
-                        </div>
-                    </div>
-                </div>
-
                 <h2> Current Jobs </h2>
                 <div class="row">
                     <div class="col-12">
@@ -162,7 +177,7 @@
                 </div>
                 <div class="row">
                     <div class="col-12">
-                        <canvas id="statChart" width="100%" height="30"></canvas>
+                        <canvas id="statChart" width="100%" height="35"></canvas>
                     </div>
                 </div>
                 <div class="row">
@@ -237,14 +252,14 @@
         var successChart = new Chart(ctx2, {
             type: 'doughnut',
             data: {
-                labels: ["A", "B"],
+                labels: ["Success", "Failure"],
                 datasets: [{
-                    label: 'L',
+                    label: '',
                     data: [
-                        1, 3
+                        21, 100
                     ],
                     backgroundColor: [
-                        'rgb(255, 0, 255)', 'rgb(255, 0, 0)'
+                        'rgb(0, 255, 0)', 'rgb(255, 0, 0)'
                     ],
                 },]
             },
@@ -264,6 +279,21 @@
             }
         });
 
+        function removeOverlay() {
+            document.getElementById('overlay').style.opacity = 1.0
+            document.getElementById('general').style.display = "block"
+            setTimeout(fadeOut, 5)
+        }
+
+        function fadeOut() {
+            if (document.getElementById('overlay').style.opacity <= 0.0) {
+                document.getElementById('overlay').style.display = "none"
+            }
+            else {
+                document.getElementById('overlay').style.opacity -= 0.01
+                setTimeout(fadeOut, 5)
+            }
+        }
     </script>
 
     <div class="modal" tabindex="-1" role="dialog" id="newJobModal">
@@ -287,7 +317,7 @@
                         </div>
                         <div class="form-group">
                             <label for="bounty">Bounty value</label>
-                            <input type="number" class="form-control" id="bounty" aria-describedby="bounty">
+                            <input type="number" class="form-control" min="0" id="bounty" aria-describedby="bounty">
                         </div>
                     </form>
                 </div>

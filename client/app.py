@@ -1,26 +1,76 @@
 from flask import Flask
-import docker
+import docker_client
+import psutil
 import requests
+import json
+from blockchain_client import BlockchainClient
+import time
+from queue import Queue
+import Message
+
+from flask_cors import CORS
+
 
 def initialize_app():
     app = Flask(__name__)
+    CORS(app)  # This will enable CORS for all routes
     return app
 
+
 app = initialize_app()
-client = docker.from_env()
 
-# api-endpoint 
-URL = "http://maps.googleapis.com/maps/api/geocode/json"
-# location given here 
-location = "delhi technological university"
-# defining a params dict for the parameters to be sent to the API 
-PARAMS = {'address':location} 
-# sending get request and saving the response as response object 
-r = requests.get(url = URL, params = PARAMS) 
-# extracting data in json format 
-data = r.json() 
-  
 
-@app.route("/")
-def hello():
-    return "Hello, World!"
+messaging_queue = Queue(maxsize=0)
+
+blockchain_client = BlockchainClient(messaging_queue)
+blockchain_client.start()
+
+
+@app.route("/machine_stats")
+def machine_stats():
+    stats = {
+        "cpu_percentage": psutil.cpu_percent(),
+        "memory_percentage": psutil.virtual_memory().percent
+    }
+    return json.dumps(stats)
+
+
+@app.route("/minimal_bounty/:value", methods=["POST"])
+def set_minimal_bounty(value):
+    messaging_queue.put({"type": Message.MINIMAL_BOUNTY, "data": value})
+    return "OK"
+
+
+@app.route("/minimal_validity/:value", methods=["POST"])
+def set_minimal_validity_time(value):
+    messaging_queue.put({"type": Message.SET_MINIMAL_VALIDITY, "data": value})
+    return "OK"
+
+
+@app.route("/max_exec/:value", methods=["POST"])
+def set_max_exec(value):
+    messaging_queue.put({"type": Message.MAXIMAL_EXEC, "data": value})
+    return "OK"
+
+
+@app.route("/balance")
+def balance():
+    return json.dumps({"balance": blockchain_client.account_balance})
+
+
+@app.route("/job", methods=["POST"])
+def queue_job():
+    # TODO
+    return "OK"
+
+
+@app.route("/force_quit/:id", methods=["POST"])
+def force_quit(id):
+    messaging_queue.put({"type": Message.FORCE_QUIT, "data": id})
+    return "OK"
+
+
+@app.route
+def get_running_pods():
+    ids = blockchain_client.running_containers.keys()
+    return ids

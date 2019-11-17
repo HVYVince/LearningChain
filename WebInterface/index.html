@@ -7,29 +7,97 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
-        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
     <title>LearningChain</title>
+
+    <script>
+
+        let BASE_URL = "http://192.33.207.178:5000"
+
+        function fetchData() {
+            $.get(BASE_URL + "/machine_stats", function (data) {
+                js = JSON.parse(data)
+                if (cpuMemUsage.data.datasets[0].data.length < 30) {
+                    cpuMemUsage.data.datasets[0].data.push(js.cpu_percentage)
+                    cpuMemUsage.data.datasets[1].data.push(js.memory_percentage)
+                    cpuMemUsage.data.labels.push("")
+                } else {
+                    for (let i = 0; i < cpuMemUsage.data.datasets[0].data.length - 1; i++) {
+                        cpuMemUsage.data.datasets[0].data[i] = cpuMemUsage.data.datasets[0].data[i + 1]
+                        cpuMemUsage.data.datasets[1].data[i] = cpuMemUsage.data.datasets[1].data[i + 1]
+                    }
+                    cpuMemUsage.data.datasets[0].data[cpuMemUsage.data.datasets[0].data.length - 1] = js.cpu_percentage
+                    cpuMemUsage.data.datasets[1].data[cpuMemUsage.data.datasets[1].data.length - 1] = js.memory_percentage
+                }
+                cpuMemUsage.update()
+            });
+
+            $.get(BASE_URL + "/balance", function (data) {
+                js = JSON.parse(data)
+                $("#balance").text("Account balance: " + js.balance + "c");
+            });
+
+            $.get(BASE_URL + "/jobs", function (data) {
+                js = JSON.parse(data)
+                $("#cardsrow").html("");
+                js.forEach(e => {
+                    let s = '<div class="card" style="width: 18rem; margin-right: 10px; margin-bottom: 10px;">'
+                    s += '<div class="card-body">'
+                    s += '<h5 class="card-title">' + e.image + '</h5>'
+                    s += '<p class="card-text">Valid until: ' + e.valid + '<br/> Bounty: ' + e.bounty + '</p>'
+                    s += '<a href="#" class="btn btn-danger">Kill Job</a>'
+                    s += '</div></div>'
+                    $("#cardsrow").html($("#cardsrow").html() + s);
+                });
+            });
+        }
+
+        function setMinimalBounty() {
+            $.post(BASE_URL + "/minimal_bounty/" + $("#minbounty").val())
+        }
+
+        function setMinimalValidity() {
+            $.post(BASE_URL + "/minimal_validity/" + $("#mintime").val())
+        }
+
+        function setMaxExec() {
+            $.post(BASE_URL + "/max_exec/" + $("#maxtime").val())
+        }
+
+        function submitJob() {
+            let dt = $("#validuntil").val()
+            let ts = new Date(dt.split("-").join("-")).getTime() / 1000;
+            $.post(BASE_URL + "/job", { url: $("#diurl").val(), valid: ts, bounty: $("#bounty").val() })
+        }
+
+        function setMaxJobs() {
+            $.post(BASE_URL + "/max_jobs/" + $("#maxjobs").val())
+        }
+
+        setInterval(fetchData, 1000)
+
+    </script>
+
 </head>
 
 <body style="height: 100%;">
     <div class="container-fluid h-100">
         <div class="row h-100">
-            <div class="col-3 shadow bg-white rounded h-100" style="width: 100%; position: fixed">
+            <div class="col-3 shadow bg-white pl-4 rounded h-100" style="width: 100%; position: fixed">
                 <div class="row">
                     <h3>Inbound job filter</h3>
                 </div>
                 <div class="form-group row">
                     <label for="minbounty" class="col-sm-6 col-form-label">Minimal Bounty</label>
                     <div class="col-sm-6">
-                        <input type="number" class="form-control" id="minbounty" value="10">
+                        <input type="number" class="form-control" id="minbounty" value="10" onchange="setMinimalBounty()">
                     </div>
                 </div>
                 <div class="form-group row">
                     <label for="mintime" class="col-sm-6 col-form-label">Minimal Time (Seconds)</label>
                     <div class="col-sm-6">
-                        <input type="number" class="form-control" id="mintime" value="86400">
+                        <input type="number" class="form-control" id="mintime" value="86400" onchange="setMinimalValidity()">
                     </div>
                 </div>
                 <div class="row">
@@ -38,21 +106,26 @@
                 <div class="form-group row">
                     <label for="maxtime" class="col-sm-6 col-form-label">Maximal Training Time (Seconds)</label>
                     <div class="col-sm-6">
-                        <input type="number" class="form-control" id="maxtime" value="3600">
+                        <input type="number" class="form-control" id="maxtime" value="3600" onchange="setMaxExec()">
                     </div>
                 </div>
                 <div class="form-group row">
+                    <label for="maxjobs" class="col-sm-6 col-form-label">Maximal Concurrent Jobs</label>
+                    <div class="col-sm-6">
+                        <input type="number" class="form-control" id="maxjobs" value="4" onchange="setMaxJobs()">
+                    </div>
+                </div>
+                <!--<div class="form-group row">
                     <div class="col-sm-6">
                         <button type="button" class="form-control btn btn-danger">Kill current job</button>
                     </div>
-                </div>
+                </div>-->
                 <div class=" row">
                     <h3>Create a job</h3>
                 </div>
                 <div class="form-group row">
                     <div class="col-sm-6">
-                        <button type="button" class="form-control btn btn-info" data-toggle="modal"
-                            data-target="#newJobModal">New Job</button>
+                        <button type="button" class="form-control btn btn-info" data-toggle="modal" data-target="#newJobModal">New Job</button>
                     </div>
                 </div>
             </div>
@@ -62,67 +135,134 @@
                         <h1>Dashboard</h1>
                     </div>
                     <div class="col-4">
-                        <h2>Account balance: 87c</h2>
+                        <h2 id="balance">Account balance: 0c</h2>
                     </div>
                 </div>
-                <h2>Current Job: </h2>
-                <canvas id="myChart" width="400" height="200"></canvas>
-                <canvas id="myChart2" width="400" height="200"></canvas>
+                <hr />
+                <h2> Finished Jobs </h2>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="row" id="fcardsrow" style="margin-left: 20px;">
+                        </div>
+                    </div>
+                </div>
+
+                <h2> Current Jobs </h2>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="row" id="cardsrow" style="margin-left: 20px;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12">
+                        <h2>Machine Stats</h2>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <canvas id="statChart" width="100%" height="30"></canvas>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <h2>Computations Stats</h2>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-6">
+                        <canvas id="computeChart"></canvas>
+                    </div>
+                </div>
             </div>
+
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
-        integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
-        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
-        crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
-        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
-        crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 
     <script>
-        var ctx = document.getElementById('myChart').getContext('2d');
-        var ctx2 = document.getElementById('myChart2').getContext('2d');
-        var exObj = {
-            type: 'bar',
+        var ctx = document.getElementById('statChart').getContext('2d');
+        var ctx2 = document.getElementById('computeChart').getContext('2d');
+        var cpuMemUsage = new Chart(ctx, {
+            type: 'line',
             data: {
-                labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+                labels: [],
                 datasets: [{
-                    label: '# of Votes',
-                    data: [12, 19, 3, 5, 2, 3],
-                    backgroundColor: [
-                        'rgba(255, 99, 132, 0.2)',
-                        'rgba(54, 162, 235, 0.2)',
-                        'rgba(255, 206, 86, 0.2)',
-                        'rgba(75, 192, 192, 0.2)',
-                        'rgba(153, 102, 255, 0.2)',
-                        'rgba(255, 159, 64, 0.2)'
+                    label: 'CPU Usage',
+                    borderColor: 'rgb(255, 99, 132)',
+                    data: [
+
                     ],
-                    borderColor: [
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 206, 86, 1)',
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(153, 102, 255, 1)',
-                        'rgba(255, 159, 64, 1)'
+                    fill: false,
+                }, {
+                    label: 'Memory Usage',
+                    borderColor: 'rgb(54, 162, 235)',
+                    data: [
+
                     ],
-                    borderWidth: 1
+                    fill: false,
                 }]
             },
             options: {
+                responsive: true,
+                tooltips: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                tooltips: { enabled: false },
+                //animation: false,
                 scales: {
+                    xAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: ''
+                        }
+                    }],
                     yAxes: [{
-                        ticks: {
-                            beginAtZero: true
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Percent'
                         }
                     }]
                 }
             }
-        };
-        var myChart = new Chart(ctx, exObj)
+        });
 
-        var myChart = new Chart(ctx2, exObj)
+        var successChart = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ["A", "B"],
+                datasets: [{
+                    label: 'L',
+                    data: [
+                        1, 3
+                    ],
+                    backgroundColor: [
+                        'rgb(255, 0, 255)', 'rgb(255, 0, 0)'
+                    ],
+                },]
+            },
+            options: {
+                responsive: true,
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Success Rate'
+                },
+                animation: {
+                    animateScale: true,
+                    animateRotate: true
+                }
+            }
+        });
 
     </script>
 
@@ -139,8 +279,7 @@
                     <form>
                         <div class="form-group">
                             <label for="diurl">Docker Image url</label>
-                            <input type="url" class="form-control" id="diurl" aria-describedby="diurl"
-                                placeholder="Example: Docker Hub url, ...">
+                            <input type="text" class="form-control" id="diurl" aria-describedby="diurl" placeholder="Example: matoran/lauzhack_knn_5@sha256:6520a3942ac2e2c91ab747a22c5d748b7f2e3acbd4414aa5867d752c5d60fb10">
                         </div>
                         <div class="form-group">
                             <label for="validuntil">Valid Until</label>
@@ -153,7 +292,7 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="console.log(2)">Send
+                    <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="submitJob()">Send
                         Job
                         Request</button>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>

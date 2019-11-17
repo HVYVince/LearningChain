@@ -60,8 +60,9 @@ def balance():
 
 @app.route("/job", methods=["POST"])
 def queue_job():
-    messaging_queue.put({"type": Message.JOB_QUEUE, "data": {
-                        "image": request.form["url"], "valid": request.form["valid"], "bounty": request.form["bounty"]}})
+    message = {"type": Message.JOB_QUEUE, "data": {
+        "image": request.form["url"], "valid": request.form["valid"], "bounty": request.form["bounty"]}}
+    messaging_queue.put(message)
     return "OK"
 
 

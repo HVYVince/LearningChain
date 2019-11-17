@@ -14,15 +14,15 @@ validation = os.getenv("VALIDATION", False)
 
 model_path = os.path.join(os.sep, "tmp", "model")
 
+train = np.array(pd.read_csv(training_path, header=None))
+train_X = train[:, :-1]
+train_y = train[:, -1]
+
+test = np.array(pd.read_csv(test_path, header=None))
+test_X = train[:, :-1]
+test_y = train[:, -1]
+
 if not validation:
-    train = np.array(pd.read_csv(training_path, header=None))
-    train_X = train[:, :-1]
-    train_y = train[:, -1]
-
-    test = np.array(pd.read_csv(test_path, header=None))
-    test_X = train[:, :-1]
-    test_y = train[:, -1]
-
     clf = KNeighborsClassifier(n_neighbors=K_VALUE)
     clf.fit(train_X, train_y)
 

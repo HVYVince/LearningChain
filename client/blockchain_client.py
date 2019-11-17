@@ -24,7 +24,7 @@ class BlockchainClient(Thread):
         self.max_jobs = 4
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         socket_backend = '192.168.43.131'
-        self.socket.connect((socket_backend, 5609))
+        self.socket.connect((socket_backend, 5601))
         self.stats = {}
 
     def run(self):
@@ -53,7 +53,7 @@ class BlockchainClient(Thread):
 
     def validate(self, validation):
         output = docker_client.run_validation(validation)
-        self.send_message(json.dumps({"type": "VALIDATE", "loss": output}))
+        self.send_message(json.dumps({"type": "VALIDATE", "loss": output.decode()}))
 
     def retrieve_stats(self):
         self.send_message(json.dumps({"type": "STATS"}))

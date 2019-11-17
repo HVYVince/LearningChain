@@ -22,6 +22,7 @@ def get_container():
 
 
 def run_validation(validation):
+    print("VALIDATION RUNNING", validation)
     directory = os.path.join(BASE_PATH, validation["signature"])
     w = validation["w"]
     w_bytes = binascii.unhexlify(w.encode())

@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 import docker_client
 import psutil
 import requests
@@ -35,19 +35,19 @@ def machine_stats():
     return json.dumps(stats)
 
 
-@app.route("/minimal_bounty/:value", methods=["POST"])
+@app.route("/minimal_bounty/<value>", methods=["POST"])
 def set_minimal_bounty(value):
     messaging_queue.put({"type": Message.MINIMAL_BOUNTY, "data": value})
     return "OK"
 
 
-@app.route("/minimal_validity/:value", methods=["POST"])
+@app.route("/minimal_validity/<value>", methods=["POST"])
 def set_minimal_validity_time(value):
     messaging_queue.put({"type": Message.SET_MINIMAL_VALIDITY, "data": value})
     return "OK"
 
 
-@app.route("/max_exec/:value", methods=["POST"])
+@app.route("/max_exec/<value>", methods=["POST"])
 def set_max_exec(value):
     messaging_queue.put({"type": Message.MAXIMAL_EXEC, "data": value})
     return "OK"
@@ -60,17 +60,20 @@ def balance():
 
 @app.route("/job", methods=["POST"])
 def queue_job():
-    # TODO
+    messaging_queue.put({"type": Message.JOB_QUEUE, "data": {
+                        "image": request.form["url"], "valid": request.form["valid"], "bounty": request.form["bounty"]}})
     return "OK"
 
 
-@app.route("/force_quit/:id", methods=["POST"])
+@app.route("/force_quit/<id>", methods=["POST"])
 def force_quit(id):
     messaging_queue.put({"type": Message.FORCE_QUIT, "data": id})
     return "OK"
 
 
-@app.route
-def get_running_pods():
-    ids = blockchain_client.running_containers.keys()
-    return ids
+@app.route("/jobs")
+def get_running_jobs():
+    jobs = list(
+        map(lambda x: x['job'], blockchain_client.running_containers.values()))
+
+    return json.dumps(jobs)

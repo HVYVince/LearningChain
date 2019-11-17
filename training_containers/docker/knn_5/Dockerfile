@@ -4,5 +4,5 @@ COPY simpleKNN.py /app
 
 ENV K=5
 
-#ENTRYPOINT [ "python", "simpleKNN.py" ]
-ENTRYPOINT [ "tail", "-f", "/dev/null" ]
+ENTRYPOINT [ "python", "simpleKNN.py" ]
+#ENTRYPOINT [ "tail", "-f", "/dev/null" ]

@@ -13,7 +13,7 @@
 
     <script>
 
-        let BASE_URL = "http://192.33.207.178:5000"
+        let BASE_URL = "http://192.168.43.251:5000"
 
         function fetchData() {
             $.get(BASE_URL + "/machine_stats", function (data) {
@@ -50,6 +50,12 @@
                     s += '</div></div>'
                     $("#cardsrow").html($("#cardsrow").html() + s);
                 });
+            });
+
+            $.get(BASE_URL + "/stats", function (data) {
+                js = JSON.parse(data)
+                successChart.data.datasets[0].data[0] = (js.success / js.jobs) * 100
+                successChart.data.datasets[0].data[1] = 100 - ((js.success / js.jobs) * 100)
             });
         }
 
@@ -139,14 +145,6 @@
                     </div>
                 </div>
                 <hr />
-                <h2> Finished Jobs </h2>
-                <div class="row">
-                    <div class="col-12">
-                        <div class="row" id="fcardsrow" style="margin-left: 20px;">
-                        </div>
-                    </div>
-                </div>
-
                 <h2> Current Jobs </h2>
                 <div class="row">
                     <div class="col-12">
@@ -237,14 +235,14 @@
         var successChart = new Chart(ctx2, {
             type: 'doughnut',
             data: {
-                labels: ["A", "B"],
+                labels: ["Success", "Failure"],
                 datasets: [{
-                    label: 'L',
+                    label: '',
                     data: [
-                        1, 3
+                        0, 100
                     ],
                     backgroundColor: [
-                        'rgb(255, 0, 255)', 'rgb(255, 0, 0)'
+                        'rgb(0, 255, 0)', 'rgb(255, 0, 0)'
                     ],
                 },]
             },

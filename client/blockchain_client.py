@@ -19,8 +19,8 @@ class BlockchainClient(Thread):
         self.running_containers = {}
         self.started_images = []
         self.max_exec = 3600
-        self.minimal_bounty = 0
-        self.minimal_validity = 10
+        self.minimal_bounty = 40
+        self.minimal_validity = 1574561216 # in one week
         self.account_balance = 0
         self.max_jobs = 4
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -66,17 +66,30 @@ class BlockchainClient(Thread):
                 self.kill_container(id)
 
     def find_new_jobs(self):
-        # TODO here it comes from the blockchain
-        # TODO here we have to filter
         self.send_message(json.dumps({"type": "GET_JOBS"}))
-        jobs_bytes = self.socket.recv(4096)
+        jobs_bytes = self.receive_message_bytes()
         jobs_json = jobs_bytes.decode()
-        return json.loads(jobs_json)
+        jobs = list(map(lambda x: x['data'],json.loads(jobs_json)))
+
+        jobs = list(filter(lambda job: job['metadata']["valid_until"] >= self.minimal_validity and job['metadata']['bounty'] >= self.minimal_bounty, jobs))
+
+        return jobs
+
+    def receive_message_bytes(self):
+        data = self.socket.recv(4)
+        if data:
+            size = struct.unpack("!i", data[:4])[0]
+            buffer = data[4:]
+            size -= len(buffer)
+            while size > 0:
+                data = self.socket.recv(min(size, 4096))
+                buffer += data
+                size -= len(data)
+            return buffer
 
     def start_new_jobs(self, jobs):
-        for job_loop in jobs:
+        for job in jobs:
             if len(self.running_containers.keys()) < self.max_jobs:
-                job = job_loop["data"]
                 image_id = job["data"]
                 if image_id not in self.started_images:
                     print(
@@ -93,7 +106,7 @@ class BlockchainClient(Thread):
         print("Retrieving account balance")
         self.send_message(json.dumps({"type": "BALANCE"}))
         print("Waiting for receive balance")
-        balance_bytes = self.socket.recv(4096)
+        balance_bytes = self.receive_message_bytes()
         print("Received")
         balance_json = balance_bytes.decode()
         self.account_balance = json.loads(balance_json)["balance"]
@@ -130,11 +143,10 @@ class BlockchainClient(Thread):
         print(f"New job {data}")
         job = {
             "data": data["image"],
-            "metadata": {"valid_until": data["valid"], "bounty": data["bounty"]}
+            "metadata": {"valid_until": int(data["valid"]), "bounty": int(data["bounty"])}
         }
         self.send_message(json.dumps(
             {"type": "NEW_JOB", "data": job}))
-        # response = self.socket.recv(4096)  # TODO do we have a response?
 
     def send_message(self, message):
         message = f"{message}\n".encode()

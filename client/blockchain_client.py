@@ -7,6 +7,9 @@ import socket
 import os
 import json
 
+import binascii
+import struct
+
 
 class BlockchainClient(Thread):
     def __init__(self, messaging_queue):
@@ -22,7 +25,7 @@ class BlockchainClient(Thread):
         self.max_jobs = 4
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         socket_backend = '192.168.43.131'
-        self.socket.connect((socket_backend, 5608))
+        self.socket.connect((socket_backend, 5602))
 
     def run(self):
         print("Started blockchain client")
@@ -32,7 +35,7 @@ class BlockchainClient(Thread):
             self.handle_expired_containers()
             self.handle_finished_containers()
             jobs = self.find_new_jobs()
-
+            print(jobs)
             if len(jobs) > 0:
                 self.start_new_jobs(jobs)
 
@@ -52,10 +55,10 @@ class BlockchainClient(Thread):
             if status == 'exited':
                 output = docker_client.retrieve_output(id).decode()
                 print(f"Output was {output}")
-
-                model_path = os.path.join(docker_client.BASE_PATH, id, "model")
+                image_hash = self.running_containers[id]["job"]["image"].split(":")[-1]
+                model_path = os.path.join(docker_client.BASE_PATH, image_hash, "model")
                 model_file = open(model_path, 'rb')
-                model_bytes = model_file.read()
+                model_bytes = binascii.hexlify(model_file.read()).decode()
                 model_file.close()
                 finished_output = {"type": "JOB_DONE",
                                    "loss": output, "w": model_bytes}
@@ -64,19 +67,22 @@ class BlockchainClient(Thread):
 
     def find_new_jobs(self):
         # TODO here it comes from the blockchain
+        # TODO here we have to filter
         self.send_message(json.dumps({"type": "GET_JOBS"}))
         jobs_bytes = self.socket.recv(4096)
         jobs_json = jobs_bytes.decode()
         return json.loads(jobs_json)
 
     def start_new_jobs(self, jobs):
-        for job in jobs:
+        for job_loop in jobs:
             if len(self.running_containers.keys()) < self.max_jobs:
+                job = job_loop["data"]
                 image_id = job["data"]
                 if image_id not in self.started_images:
                     print(
                         f"Launching new container for image {image_id} for maximum {self.max_exec} seconds")
                     self.started_images.append(image_id)
+                    print(image_id)
                     container = docker_client.run_container(image_id)
                     job_data = {
                         "image": image_id, "valid": job["metadata"]["valid_until"], "bounty": job["metadata"]["bounty"]}
@@ -122,9 +128,17 @@ class BlockchainClient(Thread):
 
     def submit_new_job(self, data):
         print(f"New job {data}")
+        job = {
+            "data": data["image"],
+            "metadata": {"valid_until": data["valid"], "bounty": data["bounty"]}
+        }
         self.send_message(json.dumps(
-            {"type": "NEW_JOB", "data": data}))
+            {"type": "NEW_JOB", "data": job}))
         # response = self.socket.recv(4096)  # TODO do we have a response?
 
     def send_message(self, message):
-        self.socket.send(f"{message}\n".encode())
+        message = f"{message}\n".encode()
+        size = len(message)
+        print(f"Message length: {size}")
+        size = struct.pack("!i", size)
+        self.socket.send(size + message)

@@ -19,7 +19,6 @@ def initialize_app():
 
 app = initialize_app()
 
-
 messaging_queue = Queue(maxsize=0)
 
 blockchain_client = BlockchainClient(messaging_queue)
@@ -79,7 +78,12 @@ def get_running_jobs():
 
     return json.dumps(jobs)
 
-@app.route("/max_jobs/<value>")
+
+@app.route("/max_jobs/<value>", methods=["POST"])
 def set_max_jobs(value):
     messaging_queue.put({"type": Message.MAX_JOBS, "data": value})
     return "OK"
+
+@app.route("/stats")
+def get_stats():
+    pass

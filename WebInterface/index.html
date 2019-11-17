@@ -80,7 +80,6 @@
         function setMaxJobs() {
             $.post(BASE_URL + "/max_jobs/" + $("#maxjobs").val())
         }
-
         setInterval(fetchData, 1000)
 
     </script>
@@ -88,7 +87,16 @@
 </head>
 
 <body style="height: 100%;">
-    <div class="container-fluid h-100">
+    <div id="overlay">
+        <img src="overlay.png" style="width: 100%"> 
+        <button type="button" class="form-control btn btn-danger" onclick="removeOverlay()" style="position:absolute;
+            width: 20%;
+            height: 10%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);"><h3>Go to dashboard</h3></button>
+    </div> 
+    <div id="general" style="display:none;" class="container-fluid h-100">
         <div class="row h-100">
             <div class="col-3 shadow bg-white pl-4 rounded h-100" style="width: 100%; position: fixed">
                 <div class="row">
@@ -262,6 +270,21 @@
             }
         });
 
+        function removeOverlay() {
+            document.getElementById('overlay').style.opacity = 1.0
+            document.getElementById('general').style.display = "block"
+            setTimeout(fadeOut, 5)
+        }
+
+        function fadeOut() {
+            if(document.getElementById('overlay').style.opacity <= 0.0) {
+                document.getElementById('overlay').style.display = "none"
+            }
+            else{
+                document.getElementById('overlay').style.opacity -= 0.01
+                setTimeout(fadeOut, 5)
+            }
+        }
     </script>
 
     <div class="modal" tabindex="-1" role="dialog" id="newJobModal">

@@ -4,6 +4,7 @@ from sklearn.svm import SVC
 import numpy as np
 import pandas as pd
 from joblib import dump, load
+import time
 
 
 training_path = os.getenv("TRAINING_PATH")
@@ -27,6 +28,7 @@ if not validation:
     clf.fit(train_X, train_y)
 
     dump(clf, model_path)
+    time.sleep(20)
 else:
     clf = load(model_path)
 

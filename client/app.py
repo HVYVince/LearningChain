@@ -86,4 +86,4 @@ def set_max_jobs(value):
 
 @app.route("/stats")
 def get_stats():
-    pass
+    return json.dumps(blockchain_client.stats)

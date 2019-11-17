@@ -1,7 +1,6 @@
 import docker_client
 from threading import Thread
 import time
-from queue import Queue
 import Message
 import socket
 import os
@@ -18,13 +17,13 @@ class BlockchainClient(Thread):
         self.running_containers = {}
         self.started_images = []
         self.max_exec = 3600
-        self.minimal_bounty = 40
+        self.minimal_bounty = 0
         self.minimal_validity = 1573957786
         self.account_balance = 0
         self.max_jobs = 4
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        socket_backend = '192.168.43.131'
-        self.socket.connect((socket_backend, 5601))
+        socket_backend = '127.0.0.1'
+        self.socket.connect((socket_backend, 5602))
         self.stats = {}
 
     def run(self):
@@ -37,7 +36,6 @@ class BlockchainClient(Thread):
             self.handle_expired_containers()
             self.handle_finished_containers()
             jobs = self.find_new_jobs()
-            print(jobs)
             if len(jobs) > 0:
                 self.start_new_jobs(jobs)
 
@@ -65,15 +63,17 @@ class BlockchainClient(Thread):
         to_delete = list(filter(lambda key: self.running_containers[key]['expiration'] < time.time(
         ), self.running_containers.keys()))
         for signature in to_delete:
+            print("EXPIRED", signature)
             self.kill_container(signature)
 
     def handle_finished_containers(self):
-        print(self.running_containers)
+        print("CHECKING FINISHING", self.running_containers)
         running_ids = list(self.running_containers.keys())
         for signature in running_ids:
-            data = self.running_containers.pop(signature, None)
+            data = self.running_containers[signature]
             container_id = data['container_id']
             status = docker_client.status(container_id)
+            print("STATUS",status)
             if status == 'exited':
                 output = docker_client.retrieve_output(container_id).decode()
                 print(f"Output was {output}")
@@ -86,14 +86,13 @@ class BlockchainClient(Thread):
                                    "loss": output, "w": model_bytes}
                 print("FINISHED ", finished_output["job_id"])
                 self.send_message(json.dumps(finished_output))
-                self.kill_container(container_id, pop=False)
+                self.kill_container(signature)
 
     def find_new_jobs(self):
         self.send_message(json.dumps({"type": "GET_JOBS"}))
         jobs_bytes = self.receive_message_bytes()
         jobs_json = jobs_bytes.decode()
         jobs = json.loads(jobs_json)
-        print("BEFORE FILTER", jobs)
         jobs = list(filter(
             lambda job: job['data']['metadata']["valid_until"] >= self.minimal_validity and job['data']['metadata'][
                 'bounty'] >= self.minimal_bounty, jobs))
@@ -140,11 +139,9 @@ class BlockchainClient(Thread):
         self.account_balance = json.loads(balance_json)["balance"]
         print(f"Account balance {self.account_balance}")
 
-    def kill_container(self, signature_id, pop=True):
-        id = signature_id
-        if pop:
-            data = self.running_containers.pop(signature_id, None)
-            id=data["container_id"]
+    def kill_container(self, signature):
+        data = self.running_containers.pop(signature, None)
+        id = data["container_id"]
         docker_client.delete(id)
 
     def process_queue(self):
@@ -157,8 +154,8 @@ class BlockchainClient(Thread):
         if msg["type"] == Message.MAXIMAL_EXEC:
             self.max_exec = int(msg["data"])
         elif msg["type"] == Message.FORCE_QUIT:
-            container_id = msg["data"]
-            self.kill_container(container_id)
+            signature = msg["data"]
+            self.kill_container(signature)
         elif msg["type"] == Message.MINIMAL_BOUNTY:
             self.max_exec = int(msg["data"])
         elif msg["type"] == Message.SET_MINIMAL_VALIDITY:

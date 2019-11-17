@@ -11,7 +11,7 @@ from messages import MessageType
 class DaemonController:
     def __init__(self, blockchain_controller: 'BlockchainController'):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.bind(('', 5601))
+        sock.bind(('', 5602))
         sock.listen(10)
         self.sock = sock
         self.inputs = [sock]

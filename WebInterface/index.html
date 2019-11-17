@@ -41,14 +41,16 @@
             $.get(BASE_URL + "/jobs", function (data) {
                 js = JSON.parse(data)
                 $("#cardsrow").html("");
+                let i = 1;
                 js.forEach(e => {
                     let s = '<div class="card" style="width: 18rem; margin-right: 10px; margin-bottom: 10px;">'
                     s += '<div class="card-body">'
-                    s += '<h5 class="card-title">' + e.image + '</h5>'
-                    s += '<p class="card-text">Valid until: ' + e.valid + '<br/> Bounty: ' + e.bounty + '</p>'
-                    s += '<a href="#" class="btn btn-danger">Kill Job</a>'
+                    s += '<h5 class="card-title">Job ' + i + '</h5>'
+                    s += '<p class="card-text">Bounty: ' + e.data.metadata.bounty + '</p>'
+                    s += '<a href="#" class="btn btn-danger" onclick="kill(' + e.signature + ')">Kill Job</a>'
                     s += '</div></div>'
                     $("#cardsrow").html($("#cardsrow").html() + s);
+                    i++;
                 });
             });
 
@@ -79,6 +81,10 @@
 
         function setMaxJobs() {
             $.post(BASE_URL + "/max_jobs/" + $("#maxjobs").val())
+        }
+
+        function kill(pid) {
+            $.post(BASE_URL + "/force_quit/" + pid)
         }
 
         setInterval(fetchData, 1000)
@@ -239,7 +245,7 @@
                 datasets: [{
                     label: '',
                     data: [
-                        0, 100
+                        21, 100
                     ],
                     backgroundColor: [
                         'rgb(0, 255, 0)', 'rgb(255, 0, 0)'

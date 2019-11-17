@@ -46,19 +46,13 @@
                 js.forEach(e => {
                     let s = '<div class="card" style="width: 18rem; margin-right: 10px; margin-bottom: 10px;">'
                     s += '<div class="card-body">'
-                    s += '<h5 class="card-title">Job ' + i + '</h5>'
+                    s += '<h5 class="card-title">Job ' + e.signature.substr(0, 5) + '</h5>'
                     s += '<p class="card-text">Bounty: ' + e.data.metadata.bounty + '</p>'
-                    s += '<a href="#" class="btn btn-danger" onclick="kill(' + e.signature + ')">Kill Job</a>'
+                    s += '<a href="#" class="btn btn-danger" onclick="kill(\'' + e.signature + '\')">Kill Job</a>'
                     s += '</div></div>'
                     $("#cardsrow").html($("#cardsrow").html() + s);
                     i++;
                 });
-            });
-
-            $.get(BASE_URL + "/stats", function (data) {
-                js = JSON.parse(data)
-                successChart.data.datasets[0].data[0] = (js.success / js.jobs) * 100
-                successChart.data.datasets[0].data[1] = 100 - ((js.success / js.jobs) * 100)
             });
         }
 

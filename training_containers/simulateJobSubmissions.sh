@@ -8,7 +8,7 @@ for image in matoran/lauzhack_svm@sha256:63d3d02bd22f4879506ef2b7ce29e799366d5c8
 	-F url=$image \
 	-F bounty=5 \
 	-F valid=1575166016
-	sleep 10
+	sleep 20
 done
 
 

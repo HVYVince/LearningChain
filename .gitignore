@@ -2,6 +2,7 @@
 .venv*
 __pycache__
 *.vscode
+*.DS_STORE
 venv
 .idea
 *.pem
